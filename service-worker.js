@@ -1,4 +1,4 @@
-const CACHE_NAME = 'loop-scheduler-mobile-v5';
+const CACHE_NAME = 'loop-scheduler-mobile-v6';
 const APP_SHELL = [
   './',
   './mujian-scheduler.html',

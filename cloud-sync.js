@@ -18,11 +18,12 @@
   let ready = false;
   let syncQueue = Promise.resolve();
   let realtimeChannel = null;
+  let recoveryMode = /(?:^|[&#?])type=recovery(?:&|$)/.test(location.hash + location.search);
 
   function addCloudStyles() {
     const style = document.createElement('style');
     style.textContent = `
-      .cloud-auth{position:fixed;inset:0;z-index:300;background:linear-gradient(145deg,#0c2a22,#1f5948);display:grid;place-items:center;padding:20px}.cloud-auth.hidden{display:none}.cloud-card{width:min(420px,100%);padding:30px;border-radius:22px;background:#fff;box-shadow:0 24px 70px #061c1770}.cloud-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}.cloud-brand-badge{width:43px;height:43px;border:1px solid #c7d8d1;border-radius:13px;color:#1f5948;display:grid;place-items:center;font:700 19px serif}.cloud-card h2{margin:0;color:#153a30;font:700 24px serif}.cloud-card p{margin:6px 0 0;color:#718079;font-size:12px;line-height:1.65}.cloud-card label{display:grid;gap:6px;margin-top:14px;color:#38584e;font-size:12px;font-weight:700}.cloud-card input{height:44px;padding:0 12px;border:1px solid #d6e1dc;border-radius:10px;font-size:14px;outline:none}.cloud-card input:focus{border-color:#4f8b77;box-shadow:0 0 0 3px #4f8b771b}.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}.cloud-actions button{height:43px;border:1px solid #d6e1dc;border-radius:10px;background:#fff;color:#315c4f;font-weight:700}.cloud-actions .cloud-primary{border-color:#1e5c49;background:#1e5c49;color:#fff}.cloud-message{min-height:20px;margin-top:12px!important;color:#a25742!important}.cloud-user{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cloud-user strong{font-size:10px;color:#315c4f}.cloud-user button{height:30px;padding:0 10px;border:1px solid #d8e2dd;border-radius:8px;color:#5b6d66;background:#fff;font-size:9px}.sync-online{color:#246d55!important}.sync-working{color:#a06a2d!important}.sync-error{color:#a44848!important}@media(max-width:700px){.cloud-card{padding:24px 20px}.cloud-user{width:100%;justify-content:space-between}}
+      .cloud-auth{position:fixed;inset:0;z-index:300;background:linear-gradient(145deg,#0c2a22,#1f5948);display:grid;place-items:center;padding:20px}.cloud-auth.hidden{display:none}.cloud-card{width:min(420px,100%);padding:30px;border-radius:22px;background:#fff;box-shadow:0 24px 70px #061c1770}.cloud-card.hidden{display:none}.cloud-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}.cloud-brand-badge{width:43px;height:43px;border:1px solid #c7d8d1;border-radius:13px;color:#1f5948;display:grid;place-items:center;font:700 19px serif}.cloud-card h2{margin:0;color:#153a30;font:700 24px serif}.cloud-card p{margin:6px 0 0;color:#718079;font-size:12px;line-height:1.65}.cloud-card label{display:grid;gap:6px;margin-top:14px;color:#38584e;font-size:12px;font-weight:700}.cloud-card input{height:44px;padding:0 12px;border:1px solid #d6e1dc;border-radius:10px;font-size:14px;outline:none}.cloud-card input:focus{border-color:#4f8b77;box-shadow:0 0 0 3px #4f8b771b}.cloud-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:20px}.cloud-actions button{height:43px;border:1px solid #d6e1dc;border-radius:10px;background:#fff;color:#315c4f;font-weight:700}.cloud-actions .cloud-primary{border-color:#1e5c49;background:#1e5c49;color:#fff}.cloud-link{margin-top:12px;padding:0;border:0;color:#2b6b56;background:none;font-size:12px;text-decoration:underline;cursor:pointer}.cloud-message{min-height:20px;margin-top:12px!important;color:#a25742!important}.cloud-user{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cloud-user strong{font-size:10px;color:#315c4f}.cloud-user button{height:30px;padding:0 10px;border:1px solid #d8e2dd;border-radius:8px;color:#5b6d66;background:#fff;font-size:9px}.sync-online{color:#246d55!important}.sync-working{color:#a06a2d!important}.sync-error{color:#a44848!important}@media(max-width:700px){.cloud-card{padding:24px 20px}.cloud-user{width:100%;justify-content:space-between}}
     `;
     document.head.appendChild(style);
   }
@@ -31,21 +32,24 @@
     const wrap = document.createElement('div');
     wrap.id = 'cloudAuth';
     wrap.className = 'cloud-auth hidden';
-    wrap.innerHTML = `<form class="cloud-card" id="cloudAuthForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>LOOP 门店协作</h2><p>登录后，所有设备会自动同步最新排班。</p></div></div><label>员工邮箱<input id="cloudEmail" type="email" autocomplete="username" required placeholder="name@example.com"></label><label>登录密码<input id="cloudPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="至少 6 位"></label><div class="cloud-actions"><button type="button" id="cloudSignup">注册账户</button><button class="cloud-primary" type="submit">登录</button></div><p class="cloud-message" id="cloudMessage"></p></form>`;
+    wrap.innerHTML = `<form class="cloud-card" id="cloudAuthForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>LOOP 门店协作</h2><p>登录后，所有设备会自动同步最新排班。</p></div></div><label>员工邮箱<input id="cloudEmail" type="email" autocomplete="username" required placeholder="name@example.com"></label><label>登录密码<input id="cloudPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="至少 6 位"></label><div class="cloud-actions"><button type="button" id="cloudSignup">注册账户</button><button class="cloud-primary" type="submit">登录</button></div><button class="cloud-link" type="button" id="cloudForgot">忘记密码？</button><p class="cloud-message" id="cloudMessage"></p></form><form class="cloud-card hidden" id="cloudRecoveryForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>重设登录密码</h2><p>为你的门店账户设置新密码。</p></div></div><label>新密码<input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="6" required placeholder="至少 6 位"></label><label>再次输入<input id="cloudConfirmPassword" type="password" autocomplete="new-password" minlength="6" required></label><div class="cloud-actions"><button type="submit" class="cloud-primary">保存新密码</button></div><p class="cloud-message" id="cloudRecoveryMessage"></p></form>`;
     document.body.appendChild(wrap);
     document.getElementById('cloudAuthForm').onsubmit = event => { event.preventDefault(); signIn(); };
     document.getElementById('cloudSignup').onclick = signUp;
+    document.getElementById('cloudForgot').onclick = sendRecoveryEmail;
+    document.getElementById('cloudRecoveryForm').onsubmit = event => { event.preventDefault(); finishRecovery(); };
   }
 
   function authMessage(message) { document.getElementById('cloudMessage').textContent = message || ''; }
   function showAuth(message = '') { document.getElementById('cloudAuth').classList.remove('hidden'); authMessage(message); }
   function hideAuth() { document.getElementById('cloudAuth').classList.add('hidden'); authMessage(''); }
+  function showRecovery() { recoveryMode = true; document.getElementById('cloudAuthForm').classList.add('hidden'); document.getElementById('cloudRecoveryForm').classList.remove('hidden'); document.getElementById('cloudAuth').classList.remove('hidden'); }
   function credentials() { return { email: document.getElementById('cloudEmail').value.trim(), password: document.getElementById('cloudPassword').value }; }
 
   async function signIn() {
     authMessage('正在登录…');
     const { error } = await client.auth.signInWithPassword(credentials());
-    if (error) return authMessage(`登录失败：${error.message}`);
+    if (error) return authMessage(error.message === 'Invalid login credentials' ? '邮箱或密码不正确。可点“忘记密码？”重设。' : `登录失败：${error.message}`);
     await startSession(true);
   }
 
@@ -53,9 +57,31 @@
     const values = credentials();
     if (!values.email || values.password.length < 6) return authMessage('请填写邮箱，并设置至少 6 位密码。');
     authMessage('正在创建账户…');
-    const { data, error } = await client.auth.signUp(values);
+    const { data, error } = await client.auth.signUp({ ...values, options: { emailRedirectTo: config.authRedirectUrl } });
     if (error) return authMessage(`注册失败：${error.message}`);
     if (!data.session) return authMessage('账户已创建，请查收验证邮件后再登录。');
+    await startSession(true);
+  }
+
+  async function sendRecoveryEmail() {
+    const email = document.getElementById('cloudEmail').value.trim();
+    if (!email) return authMessage('请先填写员工邮箱，再点击“忘记密码？”。');
+    authMessage('正在发送重设邮件…');
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: config.authRedirectUrl });
+    authMessage(error ? `发送失败：${error.message}` : '重设邮件已发送。请查收邮箱并点击邮件中的链接。');
+  }
+
+  async function finishRecovery() {
+    const password = document.getElementById('cloudNewPassword').value;
+    const confirm = document.getElementById('cloudConfirmPassword').value;
+    const message = document.getElementById('cloudRecoveryMessage');
+    if (password.length < 6 || password !== confirm) { message.textContent = '两次输入的密码需一致，且至少 6 位。'; return; }
+    message.textContent = '正在保存新密码…';
+    const { error } = await client.auth.updateUser({ password });
+    if (error) { message.textContent = `保存失败：${error.message}`; return; }
+    recoveryMode = false;
+    document.getElementById('cloudRecoveryForm').classList.add('hidden');
+    document.getElementById('cloudAuthForm').classList.remove('hidden');
     await startSession(true);
   }
 
@@ -254,8 +280,10 @@
       return showAuth('云端组件未加载，请检查网络并刷新页面。');
     }
     client = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    client.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') showRecovery(); });
     installPersistenceHooks();
     const { data: { session } } = await client.auth.getSession();
+    if (recoveryMode) return showRecovery();
     if (!session) return showAuth();
     await startSession(true);
   }

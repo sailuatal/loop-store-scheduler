@@ -220,7 +220,7 @@
     const localPersistShifts = persistShifts;
     const localPersistCollections = persistCollections;
     persistShifts = function () { localPersistShifts(); queueSync(['shifts']); };
-    persistCollections = function () { localPersistCollections(); queueSync(['scripts', 'hosts', 'rooms', 'leaves']); };
+    persistCollections = function () { localPersistCollections(); queueSync(profile?.role === 'host' ? ['leaves'] : ['scripts', 'hosts', 'rooms', 'leaves']); };
   }
 
   async function startSession(allowBootstrap = false) {

@@ -123,9 +123,35 @@
     const badge = document.createElement('div');
     badge.id = 'cloudUserBadge';
     badge.className = 'cloud-user';
-    badge.innerHTML = `<strong>${escapeHtml(profile.display_name || user.email || '已登录')} · ${profile.role === 'admin' ? '管理员' : '主持人'}</strong><button type="button">退出</button>`;
-    badge.querySelector('button').onclick = async () => { await client.auth.signOut(); location.reload(); };
+    const canGrantRequestedAdmin = profile.role === 'admin' && String(user.email || '').toLowerCase() === '2173812891@qq.com';
+    badge.innerHTML = `<strong>${escapeHtml(profile.display_name || user.email || '已登录')} · ${profile.role === 'admin' ? '管理员' : '主持人'}</strong>${canGrantRequestedAdmin ? '<button type="button" data-admin-access>授权指定账号</button>' : ''}<button type="button" data-sign-out>退出</button>`;
+    badge.querySelector('[data-admin-access]')?.addEventListener('click', openAdminAccess);
+    badge.querySelector('[data-sign-out]').onclick = async () => { await client.auth.signOut(); location.reload(); };
     document.querySelector('.top-actions')?.prepend(badge);
+  }
+
+  function openAdminAccess() {
+    if (profile?.role !== 'admin' || document.getElementById('cloudAdminAccess')) return;
+    const email = '575752381@qq.com';
+    const overlay = document.createElement('div');
+    overlay.id = 'cloudAdminAccess';
+    overlay.className = 'cloud-auth';
+    overlay.innerHTML = `<form class="cloud-card"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>授权指定账号</h2><p>仅将 ${escapeHtml(email)} 设为门店管理员，可查看和修改全店资料及排班。</p></div></div><p class="cloud-message" data-message></p><div class="cloud-actions"><button type="button" data-close>关闭</button><button class="cloud-primary" type="submit">确认授权</button></div></form>`;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('[data-close]').onclick = close;
+    overlay.onclick = event => { if (event.target === overlay) close(); };
+    overlay.querySelector('form').onsubmit = async event => {
+      event.preventDefault();
+      if (!confirm(`确定将 ${email} 设为门店管理员吗？此账号将可以修改全店资料和排班。`)) return;
+      const button = overlay.querySelector('[type="submit"]');
+      const message = overlay.querySelector('[data-message]');
+      button.disabled = true;
+      message.textContent = '正在保存管理员权限…';
+      const { data, error } = await client.from('staff_invites').upsert({ store_id: profile.store_id, email, role: 'admin', host_id: null, display_name: '门店管理员' }, { onConflict: 'store_id,email' }).select('email,role,accepted_at').single();
+      button.disabled = false;
+      message.textContent = error ? `设置失败：${error.message}` : data?.accepted_at ? '已设置为管理员。对方重新登录后即可使用管理员版。' : '管理员授权已保存。对方注册并验证此邮箱后即可使用管理员版。';
+    };
   }
 
   function applyRole() {

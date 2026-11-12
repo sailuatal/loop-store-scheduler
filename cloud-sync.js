@@ -50,10 +50,8 @@
 
   async function installOnPhone() {
     if (installPrompt) {
-      const prompt = installPrompt;
       installPrompt = null;
-      await prompt.prompt();
-      await prompt.userChoice;
+      document.getElementById('installAppButton').click();
       return;
     }
     authMessage(/iphone|ipad|ipod/i.test(navigator.userAgent)

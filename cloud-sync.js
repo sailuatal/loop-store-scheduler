@@ -39,6 +39,7 @@
     document.getElementById('cloudSignup').onclick = signUp;
     document.getElementById('cloudForgot').onclick = sendRecoveryEmail;
     document.getElementById('cloudInstall').onclick = installOnPhone;
+    if (/LOOPAndroidApp/i.test(navigator.userAgent)) document.getElementById('cloudInstall').hidden = true;
     document.getElementById('cloudRecoveryForm').onsubmit = event => { event.preventDefault(); finishRecovery(); };
   }
 

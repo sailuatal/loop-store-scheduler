@@ -12,6 +12,18 @@
   "lang": "zh-CN",
   "icons": [
     {
+      "src": "./app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "./app-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
@@ -23,7 +35,7 @@
       "name": "查看排班",
       "short_name": "排班",
       "url": "./mujian-scheduler.html#schedule",
-      "icons": [{ "src": "./app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "./app-icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

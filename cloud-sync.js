@@ -19,6 +19,7 @@
   let syncQueue = Promise.resolve();
   let realtimeChannel = null;
   let recoveryMode = /(?:^|[&#?])type=recovery(?:&|$)/.test(location.hash + location.search);
+  let installPrompt = null;
 
   function addCloudStyles() {
     const style = document.createElement('style');
@@ -32,11 +33,12 @@
     const wrap = document.createElement('div');
     wrap.id = 'cloudAuth';
     wrap.className = 'cloud-auth hidden';
-    wrap.innerHTML = `<form class="cloud-card" id="cloudAuthForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>LOOP 门店协作</h2><p>登录后，所有设备会自动同步最新排班。</p></div></div><label>员工邮箱<input id="cloudEmail" type="email" autocomplete="username" required placeholder="name@example.com"></label><label>登录密码<input id="cloudPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="至少 6 位"></label><div class="cloud-actions"><button type="button" id="cloudSignup">注册账户</button><button class="cloud-primary" type="submit">登录</button></div><button class="cloud-link" type="button" id="cloudForgot">忘记密码？</button><p class="cloud-message" id="cloudMessage"></p></form><form class="cloud-card hidden" id="cloudRecoveryForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>重设登录密码</h2><p>为你的门店账户设置新密码。</p></div></div><label>新密码<input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="6" required placeholder="至少 6 位"></label><label>再次输入<input id="cloudConfirmPassword" type="password" autocomplete="new-password" minlength="6" required></label><div class="cloud-actions"><button type="submit" class="cloud-primary">保存新密码</button></div><p class="cloud-message" id="cloudRecoveryMessage"></p></form>`;
+    wrap.innerHTML = `<form class="cloud-card" id="cloudAuthForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>LOOP 门店协作</h2><p>登录后，所有设备会自动同步最新排班。</p></div></div><label>员工邮箱<input id="cloudEmail" type="email" autocomplete="username" required placeholder="name@example.com"></label><label>登录密码<input id="cloudPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="至少 6 位"></label><div class="cloud-actions"><button type="button" id="cloudSignup">注册账户</button><button class="cloud-primary" type="submit">登录</button></div><div class="cloud-actions"><button type="button" id="cloudInstall">安装到手机</button><button type="button" id="cloudForgot">忘记密码？</button></div><p class="cloud-message" id="cloudMessage"></p></form><form class="cloud-card hidden" id="cloudRecoveryForm"><div class="cloud-brand"><span class="cloud-brand-badge">环</span><div><h2>重设登录密码</h2><p>为你的门店账户设置新密码。</p></div></div><label>新密码<input id="cloudNewPassword" type="password" autocomplete="new-password" minlength="6" required placeholder="至少 6 位"></label><label>再次输入<input id="cloudConfirmPassword" type="password" autocomplete="new-password" minlength="6" required></label><div class="cloud-actions"><button type="submit" class="cloud-primary">保存新密码</button></div><p class="cloud-message" id="cloudRecoveryMessage"></p></form>`;
     document.body.appendChild(wrap);
     document.getElementById('cloudAuthForm').onsubmit = event => { event.preventDefault(); signIn(); };
     document.getElementById('cloudSignup').onclick = signUp;
     document.getElementById('cloudForgot').onclick = sendRecoveryEmail;
+    document.getElementById('cloudInstall').onclick = installOnPhone;
     document.getElementById('cloudRecoveryForm').onsubmit = event => { event.preventDefault(); finishRecovery(); };
   }
 
@@ -45,6 +47,19 @@
   function hideAuth() { document.getElementById('cloudAuth').classList.add('hidden'); authMessage(''); }
   function showRecovery() { recoveryMode = true; document.getElementById('cloudAuthForm').classList.add('hidden'); document.getElementById('cloudRecoveryForm').classList.remove('hidden'); document.getElementById('cloudAuth').classList.remove('hidden'); }
   function credentials() { return { email: document.getElementById('cloudEmail').value.trim(), password: document.getElementById('cloudPassword').value }; }
+
+  async function installOnPhone() {
+    if (installPrompt) {
+      const prompt = installPrompt;
+      installPrompt = null;
+      await prompt.prompt();
+      await prompt.userChoice;
+      return;
+    }
+    authMessage(/iphone|ipad|ipod/i.test(navigator.userAgent)
+      ? 'iPhone：用 Safari 打开此网址，点分享按钮，再选“添加到主屏幕”。'
+      : '安卓：用 Chrome 打开此网址，点右上角菜单，再选“安装应用”或“添加到主屏幕”。');
+  }
 
   async function signIn() {
     authMessage('正在登录…');
@@ -276,6 +291,7 @@
   async function init() {
     addCloudStyles();
     addAuthUI();
+    window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); installPrompt = event; });
     if (!config.supabaseUrl || !config.supabaseAnonKey || !window.supabase?.createClient) {
       return showAuth('云端组件未加载，请检查网络并刷新页面。');
     }
@@ -284,7 +300,7 @@
     installPersistenceHooks();
     const { data: { session } } = await client.auth.getSession();
     if (recoveryMode) return showRecovery();
-    if (!session) return showAuth();
+    if (!session) return showAuth(new URLSearchParams(location.hash.slice(1)).get('error_code') === 'otp_expired' ? '重设链接已失效，请重新获取链接。' : '');
     await startSession(true);
   }
 

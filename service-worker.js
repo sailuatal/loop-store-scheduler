@@ -1,4 +1,4 @@
-const CACHE_NAME = 'loop-scheduler-mobile-v6';
+const CACHE_NAME = 'loop-scheduler-mobile-v8';
 const APP_SHELL = [
   './',
   './mujian-scheduler.html',
@@ -6,7 +6,10 @@ const APP_SHELL = [
   './cloud-sync.js',
   './supabase-client.js',
   './manifest.webmanifest',
-  './app-icon.svg'
+  './app-icon.svg',
+  './app-icon-180.png',
+  './app-icon-192.png',
+  './app-icon-512.png'
 ];
 const APP_PATHS = new Set(APP_SHELL.map(path => new URL(path, self.registration.scope).pathname));
 

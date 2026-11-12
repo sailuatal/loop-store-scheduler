@@ -1,0 +1,29 @@
+{
+  "name": "苏州LOOP循环情感演绎剧场排班",
+  "short_name": "LOOP排班",
+  "description": "剧本、卡司、房间、请假与门店班次管理",
+  "id": "./mujian-scheduler.html",
+  "start_url": "./mujian-scheduler.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f3f5f3",
+  "theme_color": "#102d26",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "查看排班",
+      "short_name": "排班",
+      "url": "./mujian-scheduler.html#schedule",
+      "icons": [{ "src": "./app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
